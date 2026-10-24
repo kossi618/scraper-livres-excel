@@ -1,0 +1,52 @@
+import re
+import time
+import requests
+import pandas as pd
+from bs4 import BeautifulSoup
+
+BASE = "https://books.toscrape.com/catalogue/"
+NOTES = {"One": 1, "Two": 2, "Three": 3, "Four": 4, "Five": 5}
+
+
+def scraper_page(numero):
+    url = f"{BASE}page-{numero}.html"
+    reponse = requests.get(url, timeout=10)
+    if reponse.status_code == 404:
+        return None  # plus de pages
+    reponse.raise_for_status()
+    reponse.encoding = "utf-8"  # corrige le "Â£"
+    soup = BeautifulSoup(reponse.text, "html.parser")
+
+    livres = []
+    for livre in soup.select("article.product_pod"):
+        classes = livre.select_one("p.star-rating")["class"]
+        prix_texte = livre.select_one("p.price_color").text
+        livres.append({
+            "titre": livre.h3.a["title"],
+            "prix_gbp": float(re.sub(r"[^\d.]", "", prix_texte)),
+            "note": NOTES.get(classes[1]),
+            "disponibilite": livre.select_one("p.availability").text.strip(),
+            "lien": BASE + livre.h3.a["href"],
+        })
+    return livres
+
+
+if __name__ == "__main__":
+    tous = []
+    for numero in range(1, 51):
+        livres = scraper_page(numero)
+        if livres is None:
+            break
+        tous.extend(livres)
+        print(f"Page {numero} : {len(livres)} livres")
+        time.sleep(0.5)  # pause pour ne pas surcharger le site
+
+    df = pd.DataFrame(tous)
+    df.to_excel("livres.xlsx", index=False)
+
+    print("\n--- Résumé ---")
+    print(f"Livres récupérés : {len(df)}")
+    print(f"Prix moyen : {df['prix_gbp'].mean():.2f} £")
+    print(f"Note moyenne : {df['note'].mean():.2f} / 5")
+    print(f"Moins cher : {df.loc[df['prix_gbp'].idxmin(), 'titre']}")
+    print("Fichier créé : livres.xlsx")

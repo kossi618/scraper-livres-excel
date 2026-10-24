@@ -17,7 +17,7 @@ python scraper.py
 ```
 
 ## Exemple de résultat
-![Capture du fichier Excel](capture.png)
+<img width="509" height="446" alt="image" src="https://github.com/user-attachments/assets/160a9091-dc07-4766-ac92-7807697d9016" />
 
 1000 livres récupérés, prix moyen 35.07 £, note moyenne 2.92 / 5.
 
